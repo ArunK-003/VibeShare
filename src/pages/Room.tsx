@@ -430,7 +430,7 @@ export function Room() {
               <div className="text-center">
                 <Upload className="mx-auto mb-2" size={24} />
                 <span className="text-sm">
-                  {uploading ? 'Uploading...'}
+                  {uploading ? 'Uploading...':'Click to upload audio'}
                 </span>
               </div>
               <input
