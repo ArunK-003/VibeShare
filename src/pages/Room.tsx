@@ -527,13 +527,14 @@ export function Room() {
                       Play
                     </button>
                     {(isAdmin || song.user_id === currentUser?.id) && (
-                      <button
-                        onClick={() => deleteSong(song.id)}
-                        className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded"
-                      >
-                        Delete
-                      </button>
-                    )}
+  <button
+    onClick={() => deleteSong(song.id)}
+    className="text-red-400 hover:text-red-300"
+  >
+    <Trash2 size={16} />
+  </button>
+)}
+
                   </div>
                 </div>
               ))}
