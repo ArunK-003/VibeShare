@@ -430,7 +430,7 @@ export function Room() {
               <div className="text-center">
                 <Upload className="mx-auto mb-2" size={24} />
                 <span className="text-sm">
-                  {uploading ? 'Uploading...' : 'Click to upload audio'}
+                  {uploading ? 'Uploading...'}
                 </span>
               </div>
               <input
@@ -541,7 +541,7 @@ export function Room() {
               {!isAdmin && songs.length > 0 && (
                 <div className="mt-4 p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg">
                   <p className="text-blue-200 text-sm">
-                    ℹ️ Only the room admin can control music playback. You can upload songs to add them to the playlist.
+                    ℹ️ Only the room admin can control music playback. You can upload songs only.
                   </p>
                 </div>
               )}
@@ -593,7 +593,7 @@ export function Room() {
               {!isAdmin && (
                 <div className="fixed bottom-20 left-4 right-4 p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg z-50">
                   <p className="text-blue-200 text-sm">
-                    ℹ️ Only the room admin can control music playback. Currently playing: {currentSong.display_name}'s song
+                    ℹ️ Currently playing: {currentSong.display_name}'s song
                   </p>
                 </div>
               )}
