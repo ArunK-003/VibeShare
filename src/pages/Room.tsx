@@ -306,36 +306,39 @@ export function Room() {
   };
 
   const deleteSong = async (songId: string) => {
-    try {
-      const { error } = await supabase
-        .from('songs')
-        .delete()
-        .eq('id', songId);
+  try {
+    const { error } = await supabase
+      .from('songs')
+      .delete()
+      .eq('id', songId);
 
-      if (error) throw error;
-      
-      // Immediate refresh for all users (especially important for admin to see deletions)
+    if (error) throw error;
+
+    // Instantly update the local list
+    setUserSongs((prevSongs) => prevSongs.filter((song) => song.id !== songId));
+
+    // Refresh for all users
+    fetchRoomAndSongs();
+    fetchRoomUsers();
+
+    setTimeout(() => {
       fetchRoomAndSongs();
       fetchRoomUsers();
-      
-      setTimeout(() => {
-        fetchRoomAndSongs();
-        fetchRoomUsers();
-      }, 50);
-      
-      setTimeout(() => {
-        fetchRoomAndSongs();
-        fetchRoomUsers();
-      }, 200);
-      
-      setTimeout(() => {
-        fetchRoomAndSongs();
-        fetchRoomUsers();
-      }, 500);
-    } catch (error) {
-      console.error('Error deleting song:', error);
-    }
-  };
+    }, 50);
+
+    setTimeout(() => {
+      fetchRoomAndSongs();
+      fetchRoomUsers();
+    }, 200);
+
+    setTimeout(() => {
+      fetchRoomAndSongs();
+      fetchRoomUsers();
+    }, 500);
+  } catch (error) {
+    console.error('Error deleting song:', error);
+  }
+};
 
   const copyRoomCode = () => {
     if (room?.room_code) {
