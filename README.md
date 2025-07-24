@@ -140,6 +140,6 @@ Feel free to fork the repo and submit pull requests! For major changes, open an 
 
 ## 🙋‍♂️ Author
 
-**Arun K** — [Portfolio](https://your-portfolio-link.com) | [LinkedIn](https://linkedin.com/in/yourprofile)
+**Arun K** — [Portfolio](https://arunk-dev.vercel.app/) | [LinkedIn](https://www.linkedin.com/in/arun-k19/)
 
 ---
