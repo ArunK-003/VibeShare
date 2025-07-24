@@ -307,37 +307,45 @@ export function Room() {
   };
 
   const deleteSong = async (songId: string) => {
+  console.log('Attempting to delete song with ID:', songId);
+
   try {
     const { error } = await supabase
       .from('songs')
       .delete()
       .eq('id', songId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase delete error:', error.message);
+      throw error;
+    }
 
-    // Instantly update the local list
+    // Update UI locally
     setUserSongs((prevSongs) => prevSongs.filter((song) => song.id !== songId));
 
-    // Refresh for all users
+    // Refresh everyone’s view
     fetchRoomAndSongs();
     fetchRoomUsers();
 
+    // Retry refresh in case of race condition
     setTimeout(() => {
       fetchRoomAndSongs();
       fetchRoomUsers();
-    }, 50);
+    }, 100);
 
     setTimeout(() => {
       fetchRoomAndSongs();
       fetchRoomUsers();
-    }, 200);
+    }, 300);
 
     setTimeout(() => {
       fetchRoomAndSongs();
       fetchRoomUsers();
-    }, 500);
+    }, 600);
+
+    console.log('Song deleted successfully:', songId);
   } catch (error) {
-    console.error('Error deleting song:', error);
+    console.error('Error deleting song:', error.message || error);
   }
 };
 
