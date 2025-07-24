@@ -427,25 +427,21 @@ export function Room() {
               </div>
             </div>
             <label className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-purple-500 transition-colors">
-              <div className="text-center">
-                <Upload className="mx-auto mb-2" size={24} />
-                <span className="text-sm">
-                  {uploading ? 'Uploading...':'Click to upload audio'}
-                </span>
-              </div>
-              <input
-                type="file"
-                accept="audio/*"
-                onChange={handleFileUpload}
-                disabled={uploading || userSongs.length >= room.max_songs_per_user}
-                onEnded={() => {
-                  setIsPlaying(false);
-                  if (isAdmin) {
-                    playNextSong();
-                  }
-                }}
-              />
-            </label>
+  <div className="text-center">
+    <Upload className="mx-auto mb-2" size={24} />
+    <span className="text-sm">
+      {uploading ? 'Uploading...' : 'Click to upload audio'}
+    </span>
+  </div>
+  <input
+    type="file"
+    accept="audio/*"
+    onChange={handleFileUpload}
+    disabled={uploading || userSongs.length >= room.max_songs_per_user}
+    className="hidden"
+  />
+</label>
+
           </div>
 
           {/* User's Songs */}
