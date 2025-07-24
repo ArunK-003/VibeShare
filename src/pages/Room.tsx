@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { getCurrentUser } from '../lib/auth';
+import { Trash2 } from "lucide-react";
 import { Music, Upload, Play, Pause, Volume2, Users, Settings, Copy, LogOut, PlayCircle } from 'lucide-react';
 
 interface Room {
