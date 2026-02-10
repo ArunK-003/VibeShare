@@ -21,6 +21,7 @@ interface Song {
   user_id: string;
   display_name?: string;
   order: number;
+  source_type: 'upload' | 'url';
 }
 
 interface UserProfile {
@@ -43,6 +44,10 @@ export function Room() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [audioUrl, setAudioUrl] = useState('');
+  const [urlSongName, setUrlSongName] = useState('');
+  const [addingUrl, setAddingUrl] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -206,6 +211,22 @@ export function Room() {
       return;
     }
 
+    // Enhanced file type validation
+    const allowedTypes = [
+      'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 
+      'audio/aac', 'audio/flac', 'audio/m4a', 'audio/webm'
+    ];
+    
+    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(mp3|wav|ogg|aac|flac|m4a|webm)$/i)) {
+      alert('Please upload a valid audio file (MP3, WAV, OGG, AAC, FLAC, M4A, WebM)');
+      return;
+    }
+
+    // File size check (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      alert('File size must be less than 50MB');
+      return;
+    }
     setUploading(true);
 
     try {
@@ -233,7 +254,8 @@ export function Room() {
           user_id: currentUser.id,
           file_url: publicUrl,
           file_name: file.name,
-          order: songs.length
+          order: songs.length,
+          source_type: 'upload'
         });
 
       if (dbError) throw dbError;
@@ -262,9 +284,94 @@ export function Room() {
       alert('Failed to upload file');
     } finally {
       setUploading(false);
+      // Reset file input
+      if (event.target) {
+        event.target.value = '';
+      }
     }
   };
 
+  const handleUrlSubmit = async () => {
+    if (!audioUrl.trim() || !urlSongName.trim() || !currentUser || !room) return;
+
+    // Check if user has reached the limit
+    if (userSongs.length >= room.max_songs_per_user) {
+      alert(`You can only add ${room.max_songs_per_user} songs per room.`);
+      return;
+    }
+
+    // Basic URL validation
+    try {
+      new URL(audioUrl);
+    } catch {
+      alert('Please enter a valid URL');
+      return;
+    }
+
+    // Check if URL points to an audio file
+    if (!audioUrl.match(/\.(mp3|wav|ogg|aac|flac|m4a|webm)(\?.*)?$/i)) {
+      alert('URL must point to an audio file (MP3, WAV, OGG, AAC, FLAC, M4A, WebM)');
+      return;
+    }
+
+    setAddingUrl(true);
+
+    try {
+      // Test if the URL is accessible
+      const testAudio = new Audio();
+      testAudio.crossOrigin = 'anonymous';
+      
+      await new Promise((resolve, reject) => {
+        testAudio.oncanplaythrough = resolve;
+        testAudio.onerror = reject;
+        testAudio.src = audioUrl;
+      });
+
+      // Save song to database
+      const { error: dbError } = await supabase
+        .from('songs')
+        .insert({
+          room_id: roomId,
+          user_id: currentUser.id,
+          file_url: audioUrl,
+          file_name: urlSongName,
+          order: songs.length,
+          source_type: 'url'
+        });
+
+      if (dbError) throw dbError;
+
+      // Reset form
+      setAudioUrl('');
+      setUrlSongName('');
+      setShowUrlInput(false);
+
+      // Multiple refresh attempts
+      fetchRoomAndSongs();
+      fetchRoomUsers();
+      
+      setTimeout(() => {
+        fetchRoomAndSongs();
+        fetchRoomUsers();
+      }, 50);
+      
+      setTimeout(() => {
+        fetchRoomAndSongs();
+        fetchRoomUsers();
+      }, 200);
+      
+      setTimeout(() => {
+        fetchRoomAndSongs();
+        fetchRoomUsers();
+      }, 500);
+
+    } catch (error) {
+      console.error('Error adding URL:', error);
+      alert('Failed to add audio from URL. Please check if the URL is accessible and points to a valid audio file.');
+    } finally {
+      setAddingUrl(false);
+    }
+  };
   const playSong = (song: Song) => {
     if (!isAdmin) return; // Only admin can play songs
     
@@ -438,22 +545,91 @@ export function Room() {
                 </div>
               </div>
             </div>
-            <label className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-purple-500 transition-colors">
-  <div className="text-center">
-    <Upload className="mx-auto mb-2" size={24} />
-    <span className="text-sm">
-      {uploading ? 'Uploading...' : 'Click to upload audio'}
-    </span>
-  </div>
-  <input
-    type="file"
-    accept="audio/*"
-    onChange={handleFileUpload}
-    disabled={uploading || userSongs.length >= room.max_songs_per_user}
-    className="hidden"
-  />
-</label>
+            
+            {/* File Upload */}
+            <div className="space-y-3">
+              <label className="flex items-center justify-center w-full h-24 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-purple-500 transition-colors">
+                <div className="text-center">
+                  <Upload className="mx-auto mb-2" size={20} />
+                  <span className="text-xs">
+                    {uploading ? 'Uploading...' : 'Upload from device'}
+                  </span>
+                </div>
+                <input
+                  type="file"
+                  accept="audio/*,.mp3,.wav,.ogg,.aac,.flac,.m4a,.webm"
+                  onChange={handleFileUpload}
+                  disabled={uploading || userSongs.length >= room.max_songs_per_user}
+                  className="hidden"
+                />
+              </label>
 
+              {/* URL Input Toggle */}
+              <button
+                onClick={() => setShowUrlInput(!showUrlInput)}
+                disabled={userSongs.length >= room.max_songs_per_user}
+                className="w-full flex items-center justify-center h-12 border-2 border-gray-600 rounded-lg hover:border-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div className="text-center">
+                  <span className="text-xs">Add from URL</span>
+                </div>
+              </button>
+
+              {/* URL Input Form */}
+              {showUrlInput && (
+                <div className="bg-gray-700 p-4 rounded-lg space-y-3">
+                  <input
+                    type="text"
+                    value={urlSongName}
+                    onChange={(e) => setUrlSongName(e.target.value)}
+                    placeholder="Song name"
+                    className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white placeholder-gray-400 text-sm"
+                  />
+                  <input
+                    type="url"
+                    value={audioUrl}
+                    onChange={(e) => setAudioUrl(e.target.value)}
+                    placeholder="Direct audio file URL (e.g., .mp3, .wav)"
+                    className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white placeholder-gray-400 text-sm"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleUrlSubmit}
+                      disabled={addingUrl || !audioUrl.trim() || !urlSongName.trim()}
+                      className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded text-sm"
+                    >
+                      {addingUrl ? 'Adding...' : 'Add'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowUrlInput(false);
+                        setAudioUrl('');
+                        setUrlSongName('');
+                      }}
+                      className="px-3 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Enter a direct link to an audio file. The URL must end with .mp3, .wav, .ogg, etc.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Supported Formats Info */}
+            <div className="mt-4 p-3 bg-gray-700/50 rounded-lg">
+              <p className="text-xs text-gray-400 mb-2">Supported formats:</p>
+              <div className="flex flex-wrap gap-1">
+                {['MP3', 'WAV', 'OGG', 'AAC', 'FLAC', 'M4A', 'WebM'].map(format => (
+                  <span key={format} className="px-2 py-1 bg-gray-600 rounded text-xs text-gray-300">
+                    {format}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400 mt-2">Max file size: 50MB</p>
+            </div>
           </div>
 
           {/* User's Songs */}
@@ -463,7 +639,12 @@ export function Room() {
               {userSongs.map((song) => (
                 <div key={song.id} className="bg-gray-700 p-3 rounded-lg flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Music size={16} />
+                    <div className="flex items-center gap-1">
+                      <Music size={16} />
+                      {song.source_type === 'url' && (
+                        <span className="text-xs text-blue-400">🔗</span>
+                      )}
+                    </div>
                     <span className="text-sm truncate">{song.file_name}</span>
                   </div>
                   <div className="flex gap-2">
@@ -505,7 +686,12 @@ export function Room() {
                           )}
                         </div>
                       ) : (
-                        <Music size={20} />
+                        <div className="flex items-center gap-1">
+                          <Music size={20} />
+                          {song.source_type === 'url' && (
+                            <span className="text-xs text-blue-400">🔗</span>
+                          )}
+                        </div>
                       )}
                     </div>
                     <div>
@@ -518,7 +704,7 @@ export function Room() {
                         )}
                       </div>
                       <div className="text-sm text-gray-400">
-                        by {song.display_name}
+                        by {song.display_name} {song.source_type === 'url' && '(URL)'}
                       </div>
                     </div>
                   </div>
