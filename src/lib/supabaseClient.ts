@@ -94,7 +94,7 @@ export const testSupabaseConnection = async (): Promise<{ success: boolean; erro
     
     const connectionPromise = supabase.auth.getSession();
     
-    const { data, error } = await supabase.auth.getSession();
+    const { data, error } = await Promise.race([connectionPromise, timeoutPromise]);
     
     if (error) {
       return { 
