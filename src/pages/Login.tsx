@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signIn } from '../lib/auth';
+import { testSupabaseConnection } from '../lib/supabaseClient';
 import { Music, Eye, EyeOff } from 'lucide-react';
 
 export const Login: React.FC = () => {
@@ -16,11 +17,21 @@ export const Login: React.FC = () => {
     setLoading(true);
     setError('');
 
+    // Test connection first
+    const connectionTest = await testSupabaseConnection();
+    if (!connectionTest.success) {
+      setError(connectionTest.error || 'Connection failed');
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await signIn(email, password);
     
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
         setError('Invalid email or password. Please check your credentials and try again.');
+      } else if (error.message.includes('Failed to fetch') || error.message.includes('Network')) {
+        setError('Unable to connect to the server. Please check your internet connection and try again.');
       } else {
         setError(error.message);
       }
