@@ -37,7 +37,7 @@ export const Register: React.FC = () => {
     
     if (error) {
       if (error.message?.includes('Failed to fetch') || error.message?.includes('fetch')) {
-        setError('Unable to connect to the server. Please check your internet connection and try again.');
+        setError('Unable to connect to the server. Please check your internet connection and try again. If the problem persists, verify that your Supabase environment variables are correctly configured in your .env file.');
       } else {
         setError(error.message);
       }
