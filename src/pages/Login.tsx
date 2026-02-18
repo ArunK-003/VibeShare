@@ -17,10 +17,10 @@ export const Login: React.FC = () => {
     setLoading(true);
     setError('');
 
-    // Test connection first
+    // Test connection first with better error handling
     const connectionTest = await testSupabaseConnection();
     if (!connectionTest.success) {
-      setError(connectionTest.error || 'Connection failed');
+      setError(connectionTest.error || '❌ Connection failed - please check your configuration');
       setLoading(false);
       return;
     }
@@ -30,10 +30,12 @@ export const Login: React.FC = () => {
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
         setError('Invalid email or password. Please check your credentials and try again.');
-      } else if (error.message.includes('Failed to fetch') || error.message.includes('Network')) {
-        setError('Unable to connect to the server. Please check your internet connection and try again.');
+      } else if (error.message.includes('Failed to fetch')) {
+        setError('❌ Cannot connect to Supabase server.\n\n🔧 SOLUTIONS:\n• Check your internet connection\n• Verify .env file configuration\n• Restart development server\n• Ensure Supabase URL is correct');
+      } else if (error.message.includes('Network')) {
+        setError('❌ Network connection failed. Please check your internet connection and try again.');
       } else {
-        setError(error.message);
+        setError(`❌ Login failed: ${error.message}\n\n🔧 If this persists, check your Supabase configuration.`);
       }
     } else if (data.user) {
       navigate('/dashboard');
@@ -57,7 +59,7 @@ export const Login: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 text-red-200 text-sm">
-                {error}
+                <pre className="whitespace-pre-wrap font-sans">{error}</pre>
               </div>
             )}
 
