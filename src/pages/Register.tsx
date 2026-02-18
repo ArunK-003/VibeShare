@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signUp } from '../lib/auth';
+import { testSupabaseConnection } from '../lib/supabaseClient';
 import { Music, Eye, EyeOff } from 'lucide-react';
 
 export const Register: React.FC = () => {
@@ -18,16 +19,28 @@ export const Register: React.FC = () => {
     setLoading(true);
     setError('');
 
+    // Test Supabase connection first
+    const connectionTest = await testSupabaseConnection();
+    if (!connectionTest.success) {
+      setError(connectionTest.error || 'Unable to connect to the server. Please check your configuration.');
+      setLoading(false);
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
       return;
     }
 
-    const { data, error } = await signUp(email, password);
+    const { data, error } = await signUp(email.trim(), password);
     
     if (error) {
-      setError(error.message);
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('fetch')) {
+        setError('Unable to connect to the server. Please check your internet connection and try again.');
+      } else {
+        setError(error.message);
+      }
     } else if (data.user) {
       navigate('/dashboard');
     }
