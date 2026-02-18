@@ -31,6 +31,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
   },
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
   global: {
     headers: {
       'X-Client-Info': 'music-room-app',
@@ -38,29 +43,35 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// Test connection on initialization
-const testConnection = async () => {
+// Enhanced connection test with better error handling
+export const testSupabaseConnection = async (): Promise<{ success: boolean; error?: string }> => {
   try {
-    // Simple connection test that doesn't require specific tables
+    // Test basic connectivity
     const { data, error } = await supabase.auth.getSession();
+    
     if (error) {
-      console.warn('Supabase connection test failed:', error.message);
-    } else {
-      console.log('Supabase connection successful');
+      return { 
+        success: false, 
+        error: `Supabase connection failed: ${error.message}` 
+      };
     }
-  } catch (error) {
-    console.warn('Supabase connection test failed:', error);
-    // Don't throw error to prevent app from breaking
+    
+    return { success: true };
+  } catch (error: any) {
+    // Handle network errors specifically
+    if (error.message?.includes('Failed to fetch') || error.name === 'TypeError') {
+      return { 
+        success: false, 
+        error: 'Unable to connect to Supabase. Please check your internet connection and Supabase configuration.' 
+      };
+    }
+    
+    return { 
+      success: false, 
+      error: `Connection test failed: ${error.message || 'Unknown error'}` 
+    };
   }
 };
-
-// Run connection test in development
-if (import.meta.env.DEV) {
-  // Run test connection without blocking app startup
-  setTimeout(() => {
-    testConnection();
-  }, 1000);
-}
 
 // Initialize storage bucket
 export const initializeStorage = async () => {
